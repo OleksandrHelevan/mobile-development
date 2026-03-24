@@ -1,4 +1,3 @@
-// ui/onboarding/OnboardingScreen.kt
 package com.example.noteapp.ui.onboarding
 
 import androidx.compose.foundation.layout.*
@@ -12,7 +11,6 @@ import androidx.navigation.NavController
 
 @Composable
 fun OnboardingScreen(navController: NavController) {
-    // Отримуємо результат (ім'я) з екрану введення через SavedStateHandle
     val savedName = navController.currentBackStackEntry
         ?.savedStateHandle
         ?.getLiveData<String>("userName")
@@ -34,11 +32,10 @@ fun OnboardingScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Кнопка активна тільки якщо введене ім'я
         Button(
             onClick = {
                 navController.navigate("main/$userName") {
-                    popUpTo("onboarding") { inclusive = true } // Видаляємо онбординг зі стеку
+                    popUpTo("onboarding") { inclusive = true }
                 }
             },
             enabled = userName.isNotBlank()

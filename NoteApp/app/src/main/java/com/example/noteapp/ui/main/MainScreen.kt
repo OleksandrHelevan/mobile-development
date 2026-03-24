@@ -1,4 +1,3 @@
-// ui/main/MainScreen.kt
 package com.example.noteapp.ui.main
 
 import androidx.compose.foundation.layout.fillMaxWidth

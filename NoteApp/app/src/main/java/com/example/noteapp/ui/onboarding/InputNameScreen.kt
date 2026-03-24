@@ -21,7 +21,6 @@ fun InputNameScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                // Передаємо результат назад
                 navController.previousBackStackEntry?.savedStateHandle?.set("userName", name)
                 navController.popBackStack()
             },
