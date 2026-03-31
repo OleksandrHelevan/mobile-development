@@ -1,5 +1,6 @@
 package com.example.noteapp.ui.list
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -138,18 +139,11 @@ fun NotesListScreen(
     }
 }
 
-@Preview(showBackground = true, name = "NotesList Light")
+@Preview(name = "Light", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_NO)
+@Preview(name = "Dark", showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun NotesListLightPreview() {
-    NoteAppTheme(darkTheme = false, dynamicColor = false) {
-        NotesListScreen()
-    }
-}
-
-@Preview(showBackground = true, name = "NotesList Dark")
-@Composable
-private fun NotesListDarkPreview() {
-    NoteAppTheme(darkTheme = true, dynamicColor = false) {
+private fun NotesListPreview() {
+    NoteAppTheme(dynamicColor = false) {
         NotesListScreen()
     }
 }

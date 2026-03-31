@@ -1,5 +1,6 @@
 package com.example.noteapp.ui.grid
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
@@ -46,18 +47,19 @@ fun TagsGridScreen(
     }
 }
 
-@Preview(showBackground = true, name = "TagsGrid Light")
+@Preview(
+    name = "TagsGrid Light",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO
+)
+@Preview(
+    name = "TagsGrid Dark",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
-private fun TagsGridLightPreview() {
-    NoteAppTheme(darkTheme = false, dynamicColor = false) {
-        TagsGridScreen()
-    }
-}
-
-@Preview(showBackground = true, name = "TagsGrid Dark")
-@Composable
-private fun TagsGridDarkPreview() {
-    NoteAppTheme(darkTheme = true, dynamicColor = false) {
+private fun TagsGridPreview() {
+    NoteAppTheme(dynamicColor = false) {
         TagsGridScreen()
     }
 }

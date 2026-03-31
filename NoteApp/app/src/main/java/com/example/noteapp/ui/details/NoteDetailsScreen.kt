@@ -1,5 +1,6 @@
 package com.example.noteapp.ui.details
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -111,18 +112,19 @@ fun NoteDetailsScreen(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(
+    name = "NoteDetails Light",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_NO
+)
+@Preview(
+    name = "NoteDetails Dark",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 private fun NoteDetailsPreview() {
-    NoteAppTheme(darkTheme = false, dynamicColor = false) {
-        NoteDetailsScreen(noteId = "1", onBack = {})
-    }
-}
-
-@Preview(showBackground = true, name = "NoteDetails Dark")
-@Composable
-private fun NoteDetailsDarkPreview() {
-    NoteAppTheme(darkTheme = true, dynamicColor = false) {
+    NoteAppTheme(dynamicColor = false) {
         NoteDetailsScreen(noteId = "1", onBack = {})
     }
 }
