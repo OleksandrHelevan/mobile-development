@@ -1,6 +1,5 @@
 package com.example.noteapp.ui.list
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,35 +7,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.noteapp.model.Note
-import com.example.noteapp.repository.NotesRepository
-import kotlinx.coroutines.delay
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.noteapp.repository.RepositoryProvider
+import com.example.noteapp.ui.theme.NoteAppTheme
 
 @Composable
 @Preview(showBackground = false)
-fun NotesListScreen() {
-    var notes by remember { mutableStateOf(emptyList<Note>()) }
-    var selectedTag by remember { mutableStateOf<String?>(null) }
-    var showFavorites by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(true) }
+fun NotesListScreen(
+    onItemClick: (String) -> Unit = {}
+) {
+    val vm: NotesListViewModel = viewModel(
+        factory = NotesListViewModelFactory(RepositoryProvider.notesRepository)
+    )
+    val state by vm.uiState.collectAsStateWithLifecycle()
 
     var showDialog by remember { mutableStateOf(false) }
     var dialogTitle by remember { mutableStateOf("") }
     var dialogContent by remember { mutableStateOf("") }
 
-    LaunchedEffect(Unit) {
-        delay(1500L)
-        notes = NotesRepository.notes
-        isLoading = false
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
             .padding(8.dp)
     ) {
         Button(onClick = { showDialog = true }, modifier = Modifier.fillMaxWidth()) {
@@ -46,11 +40,13 @@ fun NotesListScreen() {
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(modifier = Modifier.padding(bottom = 8.dp)) {
-            NotesRepository.tags.forEach { tag ->
+            state.availableTags.forEach { tagName ->
                 FilterChip(
-                    selected = selectedTag == tag.name,
-                    onClick = { selectedTag = if (selectedTag == tag.name) null else tag.name },
-                    label = { Text(tag.name) },
+                    selected = state.selectedTag == tagName,
+                    onClick = {
+                        vm.selectTag(if (state.selectedTag == tagName) null else tagName)
+                    },
+                    label = { Text(tagName) },
                     modifier = Modifier.padding(end = 4.dp)
                 )
             }
@@ -59,43 +55,36 @@ fun NotesListScreen() {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
             Text("Show favorites only")
             Switch(
-                checked = showFavorites,
-                onCheckedChange = { showFavorites = it },
+                checked = state.favoritesOnly,
+                onCheckedChange = { vm.setFavoritesOnly(it) },
                 modifier = Modifier.padding(start = 8.dp)
             )
         }
 
         Text(
-            text = "Total notes: ${notes.size}",
+            text = "Total notes: ${state.totalCount}",
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
-        if (isLoading) {
+        if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         } else {
-            val filteredNotes by remember(selectedTag, showFavorites, notes) {
-                derivedStateOf {
-                    notes.filter { note ->
-                        (!showFavorites || note.isFavorite) &&
-                                (selectedTag == null || NotesRepository.noteCategory[note.title] == selectedTag)
-                    }
-                }
-            }
+            val filteredNotes = remember(state) { vm.filteredNotes() }
 
             if (filteredNotes.isEmpty()) {
                 Text(
                     "Список порожній. Додайте перший елемент.",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
                 if (filteredNotes.size > 20) {
                     Text(
                         "Надто багато нотаток!",
-                        color = Color.Red,
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(8.dp)
                     )
                 }
@@ -104,12 +93,9 @@ fun NotesListScreen() {
                     items(filteredNotes) { note ->
                         NoteListItem(
                             note = note,
-                            onDelete = { notes = notes - note },
-                            onToggleFavorite = {
-                                notes = notes.map {
-                                    if (it.id == note.id) it.copy(isFavorite = !it.isFavorite) else it
-                                }
-                            }
+                            onClick = { onItemClick(note.id) },
+                            onDelete = { vm.deleteNote(note.id) },
+                            onToggleFavorite = { vm.toggleFavorite(note.id) }
                         )
                     }
                 }
@@ -130,18 +116,10 @@ fun NotesListScreen() {
                 },
                 confirmButton = {
                     Button(onClick = {
-                        if (dialogTitle.isNotBlank()) {
-                            notes = notes + Note(
-                                id = System.currentTimeMillis().toString(),
-                                title = dialogTitle,
-                                content = dialogContent,
-                                priority = 1,
-                                isFavorite = false
-                            )
-                            dialogTitle = ""
-                            dialogContent = ""
-                            showDialog = false
-                        }
+                        vm.addNote(dialogTitle, dialogContent)
+                        dialogTitle = ""
+                        dialogContent = ""
+                        showDialog = false
                     }) {
                         Text("Додати")
                     }
@@ -157,6 +135,22 @@ fun NotesListScreen() {
                 }
             )
         }
+    }
+}
+
+@Preview(showBackground = true, name = "NotesList Light")
+@Composable
+private fun NotesListLightPreview() {
+    NoteAppTheme(darkTheme = false, dynamicColor = false) {
+        NotesListScreen()
+    }
+}
+
+@Preview(showBackground = true, name = "NotesList Dark")
+@Composable
+private fun NotesListDarkPreview() {
+    NoteAppTheme(darkTheme = true, dynamicColor = false) {
+        NotesListScreen()
     }
 }
 

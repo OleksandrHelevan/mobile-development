@@ -1,26 +1,29 @@
 package com.example.noteapp.ui.main
 
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.noteapp.ui.list.NotesListScreen
+import com.example.noteapp.ui.list.NotesListNavHost
 import com.example.noteapp.ui.grid.TagsGridScreen
+import com.example.noteapp.ui.profile.ProfileScreen
+import com.example.noteapp.ui.profile.ProfileViewModel
 
 @Composable
 fun MainScreen(userName: String) {
     val tabNavController = rememberNavController()
-    var currentUserName by remember { mutableStateOf(userName) }
+    val profileVm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(userName))
+    val profileState by profileVm.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         bottomBar = {
@@ -54,30 +57,11 @@ fun MainScreen(userName: String) {
             startDestination = "list",
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable("list") { NotesListScreen() }
+            composable("list") { NotesListNavHost() }
             composable("grid") { TagsGridScreen() }
             composable("profile") {
-                ProfileScreen(currentUserName) { currentUserName = it }
+                ProfileScreen(profileState.name) { profileVm.setName(it) }
             }
         }
-    }
-}
-
-@Composable
-fun ProfileScreen(name: String, onNameChange: (String) -> Unit) {
-    androidx.compose.foundation.layout.Column(Modifier.padding(16.dp)) {
-        Text("Інформація про додаток", style = MaterialTheme.typography.titleLarge)
-        Text("Назва: NoteApp")
-        Text("Версія: 1.0.5")
-        Text("Розробник: Олександр")
-
-        androidx.compose.foundation.layout.Spacer(Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = name,
-            onValueChange = onNameChange,
-            label = { Text("Ваше ім'я") },
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }

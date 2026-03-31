@@ -1,8 +1,7 @@
 package com.example.noteapp.ui.list
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
@@ -11,13 +10,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.noteapp.model.Note
 
 @Composable
 fun NoteListItem(
     note: Note,
+    onClick: () -> Unit,
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit
 ) {
@@ -25,7 +24,7 @@ fun NoteListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .background(Color(0xFFE3F2FD), RoundedCornerShape(8.dp)),
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -46,14 +45,14 @@ fun NoteListItem(
                         Icon(
                             imageVector = if (note.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                             contentDescription = if (note.isFavorite) "Unfavorite" else "Favorite",
-                            tint = if (note.isFavorite) Color.Yellow else Color.Gray
+                            tint = if (note.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onDelete) {
                         Icon(
                             imageVector = Icons.Filled.Delete,
                             contentDescription = "Delete",
-                            tint = Color.Red
+                            tint = MaterialTheme.colorScheme.error
                         )
                     }
                 }
