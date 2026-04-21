@@ -1,14 +1,21 @@
 package com.example.noteapp.ui.onboarding
 
+import android.net.Uri
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.noteapp.di.ServiceLocator
+import kotlinx.coroutines.launch
 
 @Composable
 fun InputNameScreen(navController: NavController) {
+    val context = LocalContext.current
+    val settingsRepository = remember { ServiceLocator.settingsRepository(context) }
+    val scope = rememberCoroutineScope()
     var name by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.padding(16.dp)) {
@@ -21,10 +28,15 @@ fun InputNameScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = {
-                navController.previousBackStackEntry?.savedStateHandle?.set("userName", name)
-                navController.popBackStack()
+                scope.launch {
+                    settingsRepository.setUserName(name)
+                    navController.navigate("main/${Uri.encode(name)}") {
+                        popUpTo("onboarding") { inclusive = true }
+                    }
+                }
             },
-            modifier = Modifier.fillMaxWidth()
+            enabled = name.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Зберегти")
         }

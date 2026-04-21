@@ -11,11 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.noteapp.model.Note
+import com.example.noteapp.data.Note
 
 @Composable
 fun NoteListItem(
     note: Note,
+    markdownEnabled: Boolean,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit
@@ -35,9 +36,17 @@ fun NoteListItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = note.title, style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = note.content)
+                    Text(
+                        text = if (markdownEnabled) note.content else note.content.replace("*", "").replace("#", ""),
+                        maxLines = 2,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Priority: ${note.priority}", style = MaterialTheme.typography.bodySmall)
+                    Text(
+                        text = "Категорія: ${note.category}  •  Priority: ${note.priority}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
 
                 Row {

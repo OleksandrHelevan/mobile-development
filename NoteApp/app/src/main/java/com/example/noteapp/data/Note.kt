@@ -1,9 +1,10 @@
-package com.example.noteapp.model
+package com.example.noteapp.data
 
 data class Note(
     val id: String,
     val title: String,
     val content: String,
     val priority: Int,
+    val category: String = "Особисте",
     val isFavorite: Boolean = false
 )

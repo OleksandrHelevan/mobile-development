@@ -15,4 +15,3 @@ class TagsGridViewModelFactory(
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
-

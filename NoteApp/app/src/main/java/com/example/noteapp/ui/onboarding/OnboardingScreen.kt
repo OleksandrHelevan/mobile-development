@@ -2,8 +2,7 @@ package com.example.noteapp.ui.onboarding
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -11,13 +10,6 @@ import androidx.navigation.NavController
 
 @Composable
 fun OnboardingScreen(navController: NavController) {
-    val savedName = navController.currentBackStackEntry
-        ?.savedStateHandle
-        ?.getLiveData<String>("userName")
-        ?.observeAsState()
-
-    val userName = savedName?.value ?: ""
-
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -27,20 +19,7 @@ fun OnboardingScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(onClick = { navController.navigate("input_name") }) {
-            Text("Ввести ім'я")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Button(
-            onClick = {
-                navController.navigate("main/$userName") {
-                    popUpTo("onboarding") { inclusive = true }
-                }
-            },
-            enabled = userName.isNotBlank()
-        ) {
-            Text(if (userName.isBlank()) "Розпочати" else "Привіт, $userName! Розпочати")
+            Text("Почати")
         }
     }
 }

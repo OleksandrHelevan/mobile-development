@@ -8,12 +8,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.noteapp.di.ServiceLocator
 import com.example.noteapp.ui.list.NotesListNavHost
 import com.example.noteapp.ui.grid.TagsGridScreen
 import com.example.noteapp.ui.profile.ProfileScreen
@@ -21,8 +23,11 @@ import com.example.noteapp.ui.profile.ProfileViewModel
 
 @Composable
 fun MainScreen(userName: String) {
+    val context = LocalContext.current
     val tabNavController = rememberNavController()
-    val profileVm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(userName))
+    val profileVm: ProfileViewModel = viewModel(
+        factory = ProfileViewModel.Factory(ServiceLocator.settingsRepository(context))
+    )
     val profileState by profileVm.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -60,7 +65,12 @@ fun MainScreen(userName: String) {
             composable("list") { NotesListNavHost() }
             composable("grid") { TagsGridScreen() }
             composable("profile") {
-                ProfileScreen(profileState.name) { profileVm.setName(it) }
+                ProfileScreen(
+                    state = profileState,
+                    onNameChange = profileVm::setName,
+                    onSortModeChange = profileVm::setSortMode,
+                    onMarkdownEnabledChange = profileVm::setMarkdownEnabled
+                )
             }
         }
     }

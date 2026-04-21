@@ -1,7 +1,7 @@
 package com.example.noteapp.ui.grid
 
 import androidx.lifecycle.ViewModel
-import com.example.noteapp.model.Tag
+import com.example.noteapp.data.Tag
 import com.example.noteapp.repository.NotesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

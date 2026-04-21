@@ -9,7 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.noteapp.model.Tag
+import com.example.noteapp.data.Tag
 
 @Composable
 fun TagGridItem(tag: Tag, onClick: (Tag) -> Unit = {}) {

@@ -9,20 +9,22 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.noteapp.model.Tag
-import com.example.noteapp.repository.RepositoryProvider
+import com.example.noteapp.di.ServiceLocator
+import com.example.noteapp.data.Tag
 import com.example.noteapp.ui.theme.NoteAppTheme
 
 @Composable
 fun TagsGridScreen(
     onTagClick: (Tag) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val vm: TagsGridViewModel = viewModel(
-        factory = TagsGridViewModelFactory(RepositoryProvider.notesRepository)
+        factory = TagsGridViewModelFactory(ServiceLocator.notesRepository(context))
     )
     val state by vm.uiState.collectAsStateWithLifecycle()
 

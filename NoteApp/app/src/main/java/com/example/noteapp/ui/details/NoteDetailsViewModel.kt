@@ -3,9 +3,8 @@ package com.example.noteapp.ui.details
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.noteapp.model.Note
+import com.example.noteapp.data.Note
 import com.example.noteapp.repository.NotesRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,20 +36,30 @@ class NoteDetailsViewModel(
     private fun load() {
         viewModelScope.launch {
             _uiState.update { NoteDetailsUiState.Loading }
-            delay(600L)
-            val note = repository.findNoteById(noteId)
-            if (note == null) {
-                _uiState.update { NoteDetailsUiState.Error("Нотатку не знайдено") }
-                return@launch
+            kotlinx.coroutines.flow.combine(
+                repository.getNoteByIdFlow(noteId),
+                repository.getNotesFlow()
+            ) { note, allNotes ->
+                note to allNotes
+            }.collect { (note, allNotes) ->
+                if (note == null) {
+                    _uiState.update { NoteDetailsUiState.Error("Нотатку не знайдено") }
+                    return@collect
+                }
+                val related = allNotes
+                    .asSequence()
+                    .filter { it.id != note.id }
+                    .filter { it.category == note.category }
+                    .take(5)
+                    .toList()
+                _uiState.update {
+                    NoteDetailsUiState.Success(
+                        note = note,
+                        category = note.category,
+                        relatedNotes = related
+                    )
+                }
             }
-
-            val category = repository.getCategoryForNoteTitle(note.title)
-            val related = repository.getNotes()
-                .filter { it.id != note.id }
-                .filter { repository.getCategoryForNoteTitle(it.title) == category }
-                .take(5)
-
-            _uiState.update { NoteDetailsUiState.Success(note = note, category = category, relatedNotes = related) }
         }
     }
 

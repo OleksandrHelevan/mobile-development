@@ -8,11 +8,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.noteapp.repository.RepositoryProvider
+import com.example.noteapp.di.ServiceLocator
 import com.example.noteapp.ui.theme.NoteAppTheme
 
 @Composable
@@ -20,8 +21,12 @@ import com.example.noteapp.ui.theme.NoteAppTheme
 fun NotesListScreen(
     onItemClick: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
     val vm: NotesListViewModel = viewModel(
-        factory = NotesListViewModelFactory(RepositoryProvider.notesRepository)
+        factory = NotesListViewModelFactory(
+            repository = ServiceLocator.notesRepository(context),
+            settingsRepository = ServiceLocator.settingsRepository(context)
+        )
     )
     val state by vm.uiState.collectAsStateWithLifecycle()
 
@@ -94,6 +99,7 @@ fun NotesListScreen(
                     items(filteredNotes) { note ->
                         NoteListItem(
                             note = note,
+                            markdownEnabled = state.markdownEnabled,
                             onClick = { onItemClick(note.id) },
                             onDelete = { vm.deleteNote(note.id) },
                             onToggleFavorite = { vm.toggleFavorite(note.id) }
