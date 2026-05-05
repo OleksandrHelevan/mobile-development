@@ -6,5 +6,7 @@ data class Note(
     val content: String,
     val priority: Int,
     val category: String = "Особисте",
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val estimatedTime: Int = 0,
+    val sourceUrl: String = ""
 )

@@ -4,21 +4,16 @@ import com.example.noteapp.data.local.NoteDao
 import com.example.noteapp.data.local.NoteEntity
 import com.example.noteapp.data.Note
 import com.example.noteapp.data.Tag
+import com.example.noteapp.data.network.NoteApi
+import com.example.noteapp.data.network.NoteDto
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 
 class NotesRepository(
-    private val noteDao: NoteDao
+    private val noteDao: NoteDao,
+    private val api: NoteApi
 ) {
-
-    private val seedNotes = listOf(
-        Note("1", "Купити продукти", "- [ ] Сік\n- [ ] Курка\n- [ ] Рис\n- [ ] Хліб", 5, "Особисте"),
-        Note("2", "Зробити лабу", "## ЛР №8\nПеренести дані в Room + DataStore", 2, "Навчання"),
-        Note("3", "Піти в зал", "**Тренування** о 18:00\nФокус: спина + кардіо", 4, "Спорт"),
-        Note("4", "Інвестігейт", "SPIKE: How to embed custom html file in app", 1, "Робота"),
-        Note("5", "Подзвонити другу", "Обговорити ідею міні-Notion", 3, "Особисте")
-    )
-
     private val seedTags = setOf(
         Tag("1", "Навчання"),
         Tag("2", "Робота"),
@@ -36,30 +31,66 @@ class NotesRepository(
 
     fun getTagNames(): List<String> = seedTags.map { it.name }
 
-    suspend fun addNote(title: String, content: String, category: String = "Особисте") {
-        val note = Note(
+    suspend fun syncNotesFromNetwork() {
+        val networkNotes = api.getAllNotes()
+        noteDao.insertAll(networkNotes.map { it.toEntity() })
+    }
+
+    suspend fun fetchSingleNoteFromNetwork(id: String) {
+        val networkNote = api.getNoteById(id)
+        noteDao.insert(networkNote.toEntity())
+    }
+
+    suspend fun addNote(
+        title: String,
+        content: String,
+        category: String = "Особисте",
+        priority: Int = 5,
+        isFavorite: Boolean = false,
+        estimatedTime: Int = 0,
+        sourceUrl: String = ""
+    ) {
+        val newNote = NoteDto(
             id = System.currentTimeMillis().toString(),
             title = title,
             content = content,
-            priority = 1,
+            priority = priority,
             category = category,
-            isFavorite = false
+            isFavorite = isFavorite,
+            estimatedTime = estimatedTime,
+            sourceUrl = sourceUrl
         )
-        noteDao.insert(note.toEntity())
+        val createdNote = api.createNote(newNote)
+        noteDao.insert(createdNote.toEntity())
     }
 
     suspend fun deleteNote(noteId: String) {
-        noteDao.deleteById(noteId)
+        val response = api.deleteNote(noteId)
+        if (response.isSuccessful || response.code() == 404) {
+            noteDao.deleteById(noteId)
+        } else {
+            throw Exception("Помилка сервера: ${response.code()}")
+        }
     }
 
     suspend fun toggleFavorite(noteId: String, isFavorite: Boolean) {
-        noteDao.updateFavorite(id = noteId, isFavorite = isFavorite)
-    }
+        val currentNoteEntity = noteDao.getNoteByIdFlow(noteId).firstOrNull()
+            ?: throw Exception("Нотатку не знайдено локально")
 
-    suspend fun ensureSeedData() {
-        if (noteDao.countNotes() == 0) {
-            noteDao.insertAll(seedNotes.map { it.toEntity() })
-        }
+        val updatedNoteDto = NoteDto(
+            id = currentNoteEntity.id,
+            title = currentNoteEntity.title,
+            content = currentNoteEntity.content,
+            priority = currentNoteEntity.priority,
+            category = currentNoteEntity.category,
+            isFavorite = isFavorite,
+            estimatedTime = currentNoteEntity.estimatedTime,
+            sourceUrl = currentNoteEntity.sourceUrl
+        )
+
+        val resultFromServer = api.updateNote(id = noteId, note = updatedNoteDto)
+
+        noteDao.insert(resultFromServer.toEntity())
     }
 
     private fun NoteEntity.toDomain(): Note = Note(
@@ -68,15 +99,33 @@ class NotesRepository(
         content = content,
         priority = priority,
         category = category,
-        isFavorite = isFavorite
+        isFavorite = isFavorite,
+        estimatedTime = estimatedTime,
+        sourceUrl = sourceUrl
     )
 
-    private fun Note.toEntity(): NoteEntity = NoteEntity(
-        id = id,
-        title = title,
-        content = content,
-        priority = priority,
-        category = category,
-        isFavorite = isFavorite
-    )
+    // Додай цей метод у NotesRepository.kt
+    suspend fun updateNote(
+        id: String,
+        title: String,
+        content: String,
+        category: String,
+        priority: Int,
+        isFavorite: Boolean,
+        estimatedTime: Int,
+        sourceUrl: String
+    ) {
+        val updatedDto = NoteDto(
+            id = id,
+            title = title,
+            content = content,
+            priority = priority,
+            category = category,
+            isFavorite = isFavorite,
+            estimatedTime = estimatedTime,
+            sourceUrl = sourceUrl
+        )
+        val resultFromServer = api.updateNote(id = id, note = updatedDto)
+        noteDao.insert(resultFromServer.toEntity())
+    }
 }

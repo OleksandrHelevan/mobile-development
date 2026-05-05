@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -20,7 +21,10 @@ import com.example.noteapp.ui.onboarding.InputNameScreen
 import com.example.noteapp.ui.main.MainScreen
 
 @Composable
-fun SetupNavGraph(navController: NavHostController) {
+fun SetupNavGraph(
+    navController: NavHostController,
+    widthSizeClass: WindowWidthSizeClass
+) {
     val context = LocalContext.current
     val settingsRepository = ServiceLocator.settingsRepository(context)
     val settings by settingsRepository.settingsFlow.collectAsState(initial = null)
@@ -55,7 +59,11 @@ fun SetupNavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("userName") { defaultValue = "Гість" })
         ) { backStackEntry ->
             val userName = backStackEntry.arguments?.getString("userName")?.let(Uri::decode) ?: "Гість"
-            MainScreen(userName)
+
+            MainScreen(
+                userName = userName,
+                widthSizeClass = widthSizeClass
+            )
         }
     }
 }

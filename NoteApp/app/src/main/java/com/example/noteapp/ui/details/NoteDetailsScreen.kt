@@ -1,129 +1,200 @@
 package com.example.noteapp.ui.details
 
-import android.content.res.Configuration
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.noteapp.di.ServiceLocator
-import com.example.noteapp.ui.theme.NoteAppTheme
 
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun NoteDetailsScreen(
-    noteId: String,
+    noteId: String?,
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val vm: NoteDetailsViewModel = viewModel(
-        factory = NoteDetailsViewModel.Factory(
-            noteId = noteId,
-            repository = ServiceLocator.notesRepository(context)
-        )
+        key = noteId ?: "new",
+        factory = NoteDetailsViewModel.Factory(noteId, ServiceLocator.notesRepository(context))
     )
+    val state by vm.formState.collectAsStateWithLifecycle()
+    val focusManager = LocalFocusManager.current
 
-    val state by vm.uiState.collectAsStateWithLifecycle()
+    val categories = listOf("Особисте", "Робота", "Навчання", "Інше")
+    var expandedCategory by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Нотатка") },
+                title = { Text(if (noteId == "new" || noteId == null) "Нова нотатка" else "Редагування") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Назад") }
+                },
+                actions = {
+                    Button(
+                        onClick = { vm.saveNote(onBack) },
+                        enabled = state.isValid,
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) { Text("Зберегти") }
                 }
             )
         }
     ) { padding ->
-        when (val s = state) {
-            NoteDetailsUiState.Loading -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
-            }
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
 
-            is NoteDetailsUiState.Error -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(s.message, color = MaterialTheme.colorScheme.error)
-                }
-            }
-
-            is NoteDetailsUiState.Success -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp)
-                ) {
-                    Text(s.note.title, style = MaterialTheme.typography.headlineSmall)
-                    Spacer(Modifier.height(8.dp))
-                    if (s.category != null) {
-                        Text(
-                            "Категорія: ${s.category}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(8.dp))
+            if (isExpanded) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        BasicInfoSection(state, vm, focusManager)
                     }
-                    Text(s.note.content, style = MaterialTheme.typography.bodyLarge)
-
-                    Spacer(Modifier.height(16.dp))
-
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        AdditionalInfoSection(state, vm, focusManager, categories, expandedCategory) { expandedCategory = it }
+                    }
                 }
+            } else {
+                BasicInfoSection(state, vm, focusManager)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                AdditionalInfoSection(state, vm, focusManager, categories, expandedCategory) { expandedCategory = it }
             }
         }
     }
 }
 
-@Preview(
-    name = "NoteDetails Light",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_NO
-)
-@Preview(
-    name = "NoteDetails Dark",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
 @Composable
-private fun NoteDetailsPreview() {
-    NoteAppTheme(dynamicColor = false) {
-        NoteDetailsScreen(noteId = "1", onBack = {})
-    }
+fun BasicInfoSection(state: FormState, vm: NoteDetailsViewModel, focusManager: androidx.compose.ui.focus.FocusManager) {
+    Text("Основна інформація", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+    OutlinedTextField(
+        value = state.title,
+        onValueChange = vm::updateTitle,
+        label = { Text("Заголовок") },
+        isError = state.titleError != null,
+        supportingText = { state.titleError?.let { Text(it) } },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (!it.isFocused) vm.validateTitle() }
+    )
+
+    OutlinedTextField(
+        value = state.content,
+        onValueChange = vm::updateContent,
+        label = { Text("Опис") },
+        minLines = 3,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+        modifier = Modifier.fillMaxWidth()
+    )
+
+    OutlinedTextField(
+        value = state.sourceUrl,
+        onValueChange = vm::updateUrl,
+        label = { Text("URL джерела (опціонально)") },
+        isError = state.urlError != null,
+        supportingText = { state.urlError?.let { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
+        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (!it.isFocused) vm.validateUrl() }
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AdditionalInfoSection(
+    state: FormState, vm: NoteDetailsViewModel, focusManager: androidx.compose.ui.focus.FocusManager,
+    categories: List<String>, expandedCategory: Boolean, onCategoryExpandChange: (Boolean) -> Unit
+) {
+    Text("Додаткові параметри", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+    OutlinedTextField(
+        value = state.estimatedTime,
+        onValueChange = vm::updateTime,
+        label = { Text("Очікуваний час (хв)") },
+        isError = state.timeError != null,
+        supportingText = { state.timeError?.let { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { if (!it.isFocused) vm.validateTime() }
+    )
+
+    ExposedDropdownMenuBox(
+        expanded = expandedCategory,
+        onExpandedChange = onCategoryExpandChange,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = state.category,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Категорія") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandedCategory) },
+            isError = state.categoryError != null,
+            supportingText = { state.categoryError?.let { Text(it) } },
+            modifier = Modifier.menuAnchor().fillMaxWidth()
+        )
+        ExposedDropdownMenu(expanded = expandedCategory, onDismissRequest = { onCategoryExpandChange(false) }) {
+            categories.forEach { selectionOption ->
+                DropdownMenuItem(
+                    text = { Text(selectionOption) },
+                    onClick = {
+                        vm.updateCategory(selectionOption)
+                        onCategoryExpandChange(false)
+                        vm.validateCategory()
+                    }
+                )
+            }
+        }
+    }
+
+    Column {
+        Text("Пріоритет: ${state.priority.toInt()}", modifier = Modifier.padding(top = 8.dp))
+        Slider(
+            value = state.priority,
+            onValueChange = vm::updatePriority,
+            valueRange = 1f..10f,
+            steps = 8
+        )
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text("Додати в улюблені", modifier = Modifier.weight(1f))
+        Switch(checked = state.isFavorite, onCheckedChange = vm::toggleFavorite)
+    }
+}

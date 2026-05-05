@@ -6,15 +6,14 @@ import com.example.noteapp.data.Note
 import com.example.noteapp.repository.NotesRepository
 import com.example.noteapp.settings.SettingsRepository
 import com.example.noteapp.settings.SortMode
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class NotesListUiState(
     val isLoading: Boolean = true,
+    val isOffline: Boolean = false,
+    val networkError: String? = null,
+    val isActionLoading: Boolean = false,
     val notes: List<Note> = emptyList(),
     val selectedTag: String? = null,
     val favoritesOnly: Boolean = false,
@@ -39,12 +38,12 @@ class NotesListViewModel(
     val uiState: StateFlow<NotesListUiState> = _uiState.asStateFlow()
 
     init {
-        observeData()
+        observeLocalData()
+        syncWithNetwork()
     }
 
-    private fun observeData() {
+    private fun observeLocalData() {
         viewModelScope.launch {
-            repository.ensureSeedData()
             combine(
                 repository.getNotesFlow(),
                 settingsRepository.settingsFlow
@@ -63,6 +62,22 @@ class NotesListViewModel(
         }
     }
 
+    fun syncWithNetwork() {
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isOffline = false, networkError = null) }
+                repository.syncNotesFromNetwork()
+            } catch (e: Exception) {
+                android.util.Log.e("NoteAppNetwork", "Помилка під час syncWithNetwork", e)
+                _uiState.update { it.copy(isOffline = true, networkError = "Помилка мережі. Показано локальні дані.") }
+            }
+        }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(networkError = null) }
+    }
+
     fun selectTag(tag: String?) {
         _uiState.update { it.copy(selectedTag = tag) }
     }
@@ -74,21 +89,40 @@ class NotesListViewModel(
     fun addNote(title: String, content: String) {
         if (title.isBlank()) return
         viewModelScope.launch {
-            val state = _uiState.value
-            repository.addNote(title = title, content = content, category = state.selectedTag ?: "Особисте")
+            _uiState.update { it.copy(isActionLoading = true) }
+            try {
+                val state = _uiState.value
+                repository.addNote(title = title, content = content, category = state.selectedTag ?: "Особисте")
+                _uiState.update { it.copy(isActionLoading = false, networkError = "Нотатку успішно додано") }
+            } catch (e: Exception) {
+                android.util.Log.e("NoteAppNetwork", "Помилка під час addNote", e)
+                _uiState.update { it.copy(isActionLoading = false, networkError = "Помилка додавання: немає з'єднання") }
+            }
         }
     }
 
     fun deleteNote(noteId: String) {
         viewModelScope.launch {
-            repository.deleteNote(noteId)
+            _uiState.update { it.copy(isActionLoading = true) }
+            try {
+                repository.deleteNote(noteId)
+                _uiState.update { it.copy(isActionLoading = false, networkError = "Нотатку видалено") }
+            } catch (e: Exception) {
+                android.util.Log.e("NoteAppNetwork", "Помилка під час deleteNote", e)
+                _uiState.update { it.copy(isActionLoading = false, networkError = "Помилка видалення. Перевірте з'єднання.") }
+            }
         }
     }
 
     fun toggleFavorite(noteId: String) {
         viewModelScope.launch {
             val current = _uiState.value.notes.firstOrNull { it.id == noteId } ?: return@launch
-            repository.toggleFavorite(noteId = noteId, isFavorite = !current.isFavorite)
+            try {
+                repository.toggleFavorite(noteId = noteId, isFavorite = !current.isFavorite)
+            } catch (e: Exception) {
+                android.util.Log.e("NoteAppNetwork", "Помилка під час toggleFavorite", e)
+                _uiState.update { it.copy(networkError = "Помилка оновлення. Перевірте з'єднання.") }
+            }
         }
     }
 
@@ -98,7 +132,7 @@ class NotesListViewModel(
         return state.notes
             .filter { note ->
                 (!state.favoritesOnly || note.isFavorite) &&
-                    (selectedTag == null || note.category == selectedTag)
+                        (selectedTag == null || note.category == selectedTag)
             }
             .sortedWith(
                 when (state.sortMode) {
@@ -109,4 +143,3 @@ class NotesListViewModel(
             )
     }
 }
-

@@ -1,16 +1,12 @@
 package com.example.noteapp.ui.profile
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -20,55 +16,99 @@ import com.example.noteapp.ui.theme.NoteAppTheme
 @Composable
 fun ProfileScreen(
     state: ProfileUiState,
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     onNameChange: (String) -> Unit,
     onSortModeChange: (SortMode) -> Unit,
     onMarkdownEnabledChange: (Boolean) -> Unit
 ) {
-    Column(Modifier.padding(16.dp)) {
-        Text("Налаштування", style = MaterialTheme.typography.titleLarge)
-        Text("Mini Notion Notes", color = MaterialTheme.colorScheme.onSurfaceVariant)
+    val isExpanded = widthSizeClass == WindowWidthSizeClass.Expanded
 
-        Spacer(Modifier.height(16.dp))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .widthIn(max = if (isExpanded) 600.dp else Double.MAX_VALUE.dp)
+                .fillMaxWidth()
+        ) {
+            Text("Налаштування", style = MaterialTheme.typography.titleLarge)
+            Text("NoteApp", color = MaterialTheme.colorScheme.onSurfaceVariant)
 
-        OutlinedTextField(
-            value = state.name,
-            onValueChange = onNameChange,
-            label = { Text("Ваше ім'я") },
-            modifier = Modifier.fillMaxWidth()
-        )
+            Spacer(Modifier.height(24.dp))
 
-        Spacer(Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(12.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Користувач", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = state.name,
+                        onValueChange = onNameChange,
+                        label = { Text("Ваше ім'я") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
 
-        Text("Сортування списку", style = MaterialTheme.typography.titleMedium)
-        SortMode.entries.forEach { mode ->
-            androidx.compose.material3.FilterChip(
-                selected = state.sortMode == mode,
-                onClick = { onSortModeChange(mode) },
-                label = { Text(mode.name.replace('_', ' ')) },
-                modifier = Modifier.padding(top = 8.dp, end = 8.dp)
-            )
+            Spacer(Modifier.height(24.dp))
+
+            Text("Інтерфейс та сортування", style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+
+            Text("Сортування списку", style = MaterialTheme.typography.labelLarge)
+            FlowRow(
+                modifier = Modifier.padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SortMode.entries.forEach { mode ->
+                    FilterChip(
+                        selected = state.sortMode == mode,
+                        onClick = { onSortModeChange(mode) },
+                        label = { Text(mode.name.replace('_', ' ')) }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Markdown-підсвітка", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        "Відображати стилі тексту у загальному списку",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = state.markdownEnabled,
+                    onCheckedChange = onMarkdownEnabledChange
+                )
+            }
         }
-
-        Spacer(Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(Modifier.height(12.dp))
-
-        Text("Markdown-підсвітка у списку", style = MaterialTheme.typography.titleMedium)
-        Switch(
-            checked = state.markdownEnabled,
-            onCheckedChange = onMarkdownEnabledChange
-        )
     }
 }
 
-@Preview(showBackground = true, name = "Profile Light")
+@Preview(showBackground = true, name = "Profile Tablet", widthDp = 900, heightDp = 600)
 @Composable
-private fun ProfileLightPreview() {
+private fun ProfileTabletPreview() {
     NoteAppTheme(darkTheme = false, dynamicColor = false) {
         ProfileScreen(
-            state = ProfileUiState(name = "Олександр"),
+            state = ProfileUiState(name = "Oleksandr", sortMode = SortMode.PRIORITY_ASC),
+            widthSizeClass = WindowWidthSizeClass.Expanded,
             onNameChange = {},
             onSortModeChange = {},
             onMarkdownEnabledChange = {}
@@ -76,12 +116,13 @@ private fun ProfileLightPreview() {
     }
 }
 
-@Preview(showBackground = true, name = "Profile Dark")
+@Preview(showBackground = true, name = "Profile Phone")
 @Composable
-private fun ProfileDarkPreview() {
-    NoteAppTheme(darkTheme = true, dynamicColor = false) {
+private fun ProfilePhonePreview() {
+    NoteAppTheme(darkTheme = false, dynamicColor = false) {
         ProfileScreen(
             state = ProfileUiState(name = "Олександр"),
+            widthSizeClass = WindowWidthSizeClass.Compact,
             onNameChange = {},
             onSortModeChange = {},
             onMarkdownEnabledChange = {}

@@ -1,11 +1,12 @@
 package com.example.noteapp.ui.grid
 
-import android.content.res.Configuration
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -20,6 +21,7 @@ import com.example.noteapp.ui.theme.NoteAppTheme
 
 @Composable
 fun TagsGridScreen(
+    widthSizeClass: WindowWidthSizeClass = WindowWidthSizeClass.Compact,
     onTagClick: (Tag) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -28,10 +30,14 @@ fun TagsGridScreen(
     )
     val state by vm.uiState.collectAsStateWithLifecycle()
 
+    val columnsCount = if (widthSizeClass == WindowWidthSizeClass.Expanded) 4 else 2
+
     if (state.isVertical) {
         LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier.padding(16.dp)
+            columns = GridCells.Fixed(columnsCount),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
             items(state.tags) { tag ->
                 TagGridItem(tag = tag, onClick = onTagClick)
@@ -39,8 +45,10 @@ fun TagsGridScreen(
         }
     } else {
         LazyHorizontalGrid(
-            rows = GridCells.Fixed(2),
-            modifier = Modifier.padding(16.dp)
+            rows = GridCells.Fixed(columnsCount),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
             items(state.tags) { tag ->
                 TagGridItem(tag = tag, onClick = onTagClick)
@@ -49,16 +57,7 @@ fun TagsGridScreen(
     }
 }
 
-@Preview(
-    name = "TagsGrid Light",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_NO
-)
-@Preview(
-    name = "TagsGrid Dark",
-    showBackground = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(showBackground = true)
 @Composable
 private fun TagsGridPreview() {
     NoteAppTheme(dynamicColor = false) {
