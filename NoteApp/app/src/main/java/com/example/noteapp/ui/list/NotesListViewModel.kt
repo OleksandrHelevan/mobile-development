@@ -6,11 +6,13 @@ import com.example.noteapp.data.Note
 import com.example.noteapp.repository.NotesRepository
 import com.example.noteapp.settings.SettingsRepository
 import com.example.noteapp.settings.SortMode
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 data class NotesListUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false, // ЗАВДАННЯ 4: Стан для Pull-to-refresh
     val isOffline: Boolean = false,
     val networkError: String? = null,
     val isActionLoading: Boolean = false,
@@ -74,6 +76,22 @@ class NotesListViewModel(
         }
     }
 
+    // ЗАВДАННЯ 4: Функція для Pull-to-refresh з імітацією затримки
+    fun refreshNotes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            delay(1500) // Візуальна імітація затримки мережі
+            try {
+                repository.syncNotesFromNetwork()
+                _uiState.update { it.copy(isOffline = false, networkError = "Дані оновлено") }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isOffline = true, networkError = "Не вдалося оновити") }
+            } finally {
+                _uiState.update { it.copy(isRefreshing = false) }
+            }
+        }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(networkError = null) }
     }
@@ -86,21 +104,6 @@ class NotesListViewModel(
         _uiState.update { it.copy(favoritesOnly = enabled) }
     }
 
-    fun addNote(title: String, content: String) {
-        if (title.isBlank()) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(isActionLoading = true) }
-            try {
-                val state = _uiState.value
-                repository.addNote(title = title, content = content, category = state.selectedTag ?: "Особисте")
-                _uiState.update { it.copy(isActionLoading = false, networkError = "Нотатку успішно додано") }
-            } catch (e: Exception) {
-                android.util.Log.e("NoteAppNetwork", "Помилка під час addNote", e)
-                _uiState.update { it.copy(isActionLoading = false, networkError = "Помилка додавання: немає з'єднання") }
-            }
-        }
-    }
-
     fun deleteNote(noteId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isActionLoading = true) }
@@ -109,7 +112,7 @@ class NotesListViewModel(
                 _uiState.update { it.copy(isActionLoading = false, networkError = "Нотатку видалено") }
             } catch (e: Exception) {
                 android.util.Log.e("NoteAppNetwork", "Помилка під час deleteNote", e)
-                _uiState.update { it.copy(isActionLoading = false, networkError = "Помилка видалення. Перевірте з'єднання.") }
+                _uiState.update { it.copy(isActionLoading = false, networkError = "Помилка видалення.") }
             }
         }
     }
@@ -121,7 +124,7 @@ class NotesListViewModel(
                 repository.toggleFavorite(noteId = noteId, isFavorite = !current.isFavorite)
             } catch (e: Exception) {
                 android.util.Log.e("NoteAppNetwork", "Помилка під час toggleFavorite", e)
-                _uiState.update { it.copy(networkError = "Помилка оновлення. Перевірте з'єднання.") }
+                _uiState.update { it.copy(networkError = "Помилка оновлення.") }
             }
         }
     }
