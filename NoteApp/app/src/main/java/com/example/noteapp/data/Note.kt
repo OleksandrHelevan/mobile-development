@@ -8,5 +8,8 @@ data class Note(
     val category: String = "Особисте",
     val isFavorite: Boolean = false,
     val estimatedTime: Int = 0,
-    val sourceUrl: String = ""
+    val sourceUrl: String = "",
+    val imagePath: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

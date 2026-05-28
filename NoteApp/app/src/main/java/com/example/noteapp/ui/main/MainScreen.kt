@@ -42,13 +42,11 @@ fun MainScreen(
             NavigationRail(
                 containerColor = MaterialTheme.colorScheme.surface,
                 windowInsets = WindowInsets(0, 0, 0, 0),
-                // ВИДАЛЕНО: блок header з іконкою EditNote
                 header = null
             ) {
                 val navBackStackEntry by tabNavController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
 
-                // Додамо невеликий відступ зверху, щоб перша кнопка не "прилипала" до краю
                 Spacer(Modifier.height(8.dp))
 
                 NavigationRailItem(

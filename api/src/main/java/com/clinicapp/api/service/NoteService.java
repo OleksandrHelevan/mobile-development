@@ -49,6 +49,9 @@ public class NoteService {
             existingNote.setIsFavorite(updatedNote.getIsFavorite());
             existingNote.setEstimatedTime(updatedNote.getEstimatedTime());
             existingNote.setSourceUrl(updatedNote.getSourceUrl());
+            existingNote.setImagePath(updatedNote.getImagePath());
+            existingNote.setLatitude(updatedNote.getLatitude());
+            existingNote.setLongitude(updatedNote.getLongitude());
 
             return noteRepository.save(existingNote);
         }).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Нотатку не знайдено"));

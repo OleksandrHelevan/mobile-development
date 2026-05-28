@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 data class NotesListUiState(
     val isLoading: Boolean = true,
-    val isRefreshing: Boolean = false, // ЗАВДАННЯ 4: Стан для Pull-to-refresh
+    val isRefreshing: Boolean = false,
     val isOffline: Boolean = false,
     val networkError: String? = null,
     val isActionLoading: Boolean = false,
@@ -76,11 +76,10 @@ class NotesListViewModel(
         }
     }
 
-    // ЗАВДАННЯ 4: Функція для Pull-to-refresh з імітацією затримки
     fun refreshNotes() {
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true) }
-            delay(1500) // Візуальна імітація затримки мережі
+            delay(1500)
             try {
                 repository.syncNotesFromNetwork()
                 _uiState.update { it.copy(isOffline = false, networkError = "Дані оновлено") }

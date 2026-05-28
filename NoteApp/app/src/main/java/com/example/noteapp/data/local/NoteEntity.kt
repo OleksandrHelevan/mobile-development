@@ -12,5 +12,8 @@ data class NoteEntity(
     val category: String,
     val isFavorite: Boolean,
     val estimatedTime: Int,
-    val sourceUrl: String = ""
+    val sourceUrl: String = "",
+    val imagePath: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

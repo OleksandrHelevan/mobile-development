@@ -4,13 +4,13 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.noteapp.data.Note
 
@@ -23,10 +23,9 @@ fun NoteListItem(
     onDelete: () -> Unit,
     onToggleFavorite: () -> Unit
 ) {
-    // Стан для відображення контекстного меню
     var showContextMenu by remember { mutableStateOf(false) }
 
-    Box {
+    Box(modifier = Modifier.testTag("NoteItem_${note.id}")) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -59,7 +58,10 @@ fun NoteListItem(
                     }
 
                     Row {
-                        IconButton(onClick = onToggleFavorite) {
+                        IconButton(
+                            onClick = onToggleFavorite,
+                            modifier = Modifier.testTag("FavoriteButton_${note.id}")
+                        ) {
                             Icon(
                                 imageVector = if (note.isFavorite) Icons.Filled.Star else Icons.Outlined.Star,
                                 contentDescription = if (note.isFavorite) "Unfavorite" else "Favorite",

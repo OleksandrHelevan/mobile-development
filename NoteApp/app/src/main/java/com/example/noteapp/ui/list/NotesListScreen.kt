@@ -18,6 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -58,7 +64,7 @@ fun NotesListScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(top = 4.dp, start = 8.dp, end = 8.dp)
         ) {
             if (state.isOffline) {
@@ -66,10 +72,13 @@ fun NotesListScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.errorContainer)
-                        .padding(4.dp),
+                        .padding(4.dp)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "Немає підключення до мережі"
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Warning, null, tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Офлайн", style = MaterialTheme.typography.labelSmall)
                     Spacer(Modifier.weight(1f))
@@ -81,7 +90,9 @@ fun NotesListScreen(
 
             if (state.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(
+                        modifier = Modifier.semantics { contentDescription = "Завантаження списку нотаток" }
+                    )
                 }
             } else {
                 val filteredNotes = remember(state) { vm.filteredNotes() }
@@ -91,7 +102,10 @@ fun NotesListScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Button(
                                 onClick = { if (isExpanded) selectedNoteIdForPane = "new" else onAddOrEditClick("new") },
-                                modifier = Modifier.weight(1f).height(36.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .testTag("AddNoteButton"),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                             ) {
                                 Text("+ Нотатка", style = MaterialTheme.typography.labelMedium)
@@ -109,7 +123,13 @@ fun NotesListScreen(
                                     selected = state.selectedTag == tagName,
                                     onClick = { vm.selectTag(if (state.selectedTag == tagName) null else tagName) },
                                     label = { Text(tagName, style = MaterialTheme.typography.labelSmall) },
-                                    modifier = Modifier.padding(end = 4.dp).height(28.dp)
+                                    modifier = Modifier
+                                        .padding(end = 4.dp)
+                                        .height(28.dp)
+                                        .semantics {
+                                            role = Role.Checkbox
+                                            stateDescription = if (state.selectedTag == tagName) "Вибрано фільтр $tagName" else "Фільтр $tagName не вибрано"
+                                        }
                                 )
                             }
                         }
@@ -119,10 +139,19 @@ fun NotesListScreen(
                             Switch(
                                 checked = state.favoritesOnly,
                                 onCheckedChange = { vm.setFavoritesOnly(it) },
-                                modifier = Modifier.padding(start = 8.dp).graphicsLayer(scaleX = 0.7f, scaleY = 0.7f)
+                                modifier = Modifier
+                                    .padding(start = 8.dp)
+                                    .graphicsLayer(scaleX = 0.7f, scaleY = 0.7f)
+                                    .semantics {
+                                        contentDescription = "Фільтрувати тільки улюблені нотатки"
+                                    }
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("Усього: ${state.totalCount}", style = MaterialTheme.typography.labelSmall)
+                            Text(
+                                "Усього: ${state.totalCount}",
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.semantics { contentDescription = "Загальна кількість нотаток: ${state.totalCount}" }
+                            )
                         }
                     }
                 }
@@ -135,7 +164,11 @@ fun NotesListScreen(
                     ) {
                         if (filteredNotes.isEmpty()) {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Text("Порожньо", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    "Порожньо",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.semantics { contentDescription = "Список нотаток порожній" }
+                                )
                             }
                         } else {
                             LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -158,10 +191,14 @@ fun NotesListScreen(
                                                     .fillMaxSize()
                                                     .padding(vertical = 4.dp)
                                                     .background(Color.Red, shape = MaterialTheme.shapes.medium)
-                                                    .padding(horizontal = 20.dp),
+                                                    .padding(horizontal = 20.dp)
+                                                    .semantics(mergeDescendants = true) {
+                                                        role = Role.Button
+                                                        contentDescription = "Видалити нотатку ${note.title}"
+                                                    },
                                                 contentAlignment = Alignment.CenterEnd
                                             ) {
-                                                Icon(Icons.Default.Delete, contentDescription = "Видалити", tint = Color.White)
+                                                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.White)
                                             }
                                         }
                                     ) {

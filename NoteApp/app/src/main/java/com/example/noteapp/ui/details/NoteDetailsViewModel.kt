@@ -1,14 +1,24 @@
 package com.example.noteapp.ui.details
 
+import android.annotation.SuppressLint
+import android.content.Context
+import android.graphics.Bitmap
+import android.location.Location
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.noteapp.repository.NotesRepository
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.io.File
+import java.io.FileOutputStream
+import java.util.UUID
 
 data class FormState(
     val title: String = "", val titleError: String? = null,
@@ -18,6 +28,12 @@ data class FormState(
     val category: String = "", val categoryError: String? = null,
     val isFavorite: Boolean = false,
     val sourceUrl: String = "", val urlError: String? = null,
+    val imagePath: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val locationAccuracy: Float? = null,
+    val distanceToKyiv: Float? = null,
+
     val isValid: Boolean = false
 )
 
@@ -28,6 +44,9 @@ class NoteDetailsViewModel(
 
     private val _formState = MutableStateFlow(FormState())
     val formState = _formState.asStateFlow()
+
+    private val KYIV_LAT = 50.4501
+    private val KYIV_LNG = 30.5234
 
     init {
         if (noteId != null && noteId != "new") {
@@ -47,8 +66,14 @@ class NoteDetailsViewModel(
                             priority = note.priority.toFloat(),
                             category = note.category,
                             isFavorite = note.isFavorite,
-                            sourceUrl = note.sourceUrl
+                            sourceUrl = note.sourceUrl,
+                            imagePath = note.imagePath,
+                            latitude = note.latitude,
+                            longitude = note.longitude
                         )
+                    }
+                    if (note.latitude != null && note.longitude != null) {
+                        calculateDistance(note.latitude, note.longitude)
                     }
                     checkFormValidity()
                 }
@@ -94,7 +119,6 @@ class NoteDetailsViewModel(
         checkFormValidity()
     }
 
-    // Валідація
     fun validateTitle() {
         val error = if (_formState.value.title.trim().length < 3) "Мінімум 3 символи" else null
         _formState.update { it.copy(titleError = error) }
@@ -133,6 +157,47 @@ class NoteDetailsViewModel(
         _formState.update { it.copy(isValid = isValid) }
     }
 
+
+    fun saveImageToInternalStorage(context: Context, bitmap: Bitmap) {
+        viewModelScope.launch {
+            val filename = "note_img_${UUID.randomUUID()}.jpg"
+            val file = File(context.filesDir, filename)
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+            }
+            _formState.update { it.copy(imagePath = file.absolutePath) }
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    fun fetchLocation(context: Context) {
+        viewModelScope.launch {
+            try {
+                val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
+                val location = fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
+
+                if (location != null) {
+                    _formState.update {
+                        it.copy(
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            locationAccuracy = location.accuracy
+                        )
+                    }
+                    calculateDistance(location.latitude, location.longitude)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun calculateDistance(lat: Double, lng: Double) {
+        val results = FloatArray(1)
+        Location.distanceBetween(lat, lng, KYIV_LAT, KYIV_LNG, results)
+        _formState.update { it.copy(distanceToKyiv = results[0]) }
+    }
+
     fun saveNote(onSaved: () -> Unit) {
         if (!_formState.value.isValid) return
 
@@ -148,7 +213,10 @@ class NoteDetailsViewModel(
                     priority = state.priority.toInt(),
                     isFavorite = state.isFavorite,
                     estimatedTime = time,
-                    sourceUrl = state.sourceUrl
+                    sourceUrl = state.sourceUrl,
+                    imagePath = state.imagePath,
+                    latitude = state.latitude,
+                    longitude = state.longitude
                 )
             } else {
                 repository.updateNote(
@@ -159,7 +227,10 @@ class NoteDetailsViewModel(
                     priority = state.priority.toInt(),
                     isFavorite = state.isFavorite,
                     estimatedTime = time,
-                    sourceUrl = state.sourceUrl
+                    sourceUrl = state.sourceUrl,
+                    imagePath = state.imagePath,
+                    latitude = state.latitude,
+                    longitude = state.longitude
                 )
             }
             onSaved()

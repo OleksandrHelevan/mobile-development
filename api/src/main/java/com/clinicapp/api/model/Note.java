@@ -25,4 +25,8 @@ public class Note {
 
     private int estimatedTime;
     private String sourceUrl;
+
+    private String imagePath;
+    private Double latitude;
+    private Double longitude;
 }

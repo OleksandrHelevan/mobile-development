@@ -9,7 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.noteapp.di.ServiceLocator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun InputNameScreen(navController: NavController) {
@@ -30,8 +32,10 @@ fun InputNameScreen(navController: NavController) {
             onClick = {
                 scope.launch {
                     settingsRepository.setUserName(name)
-                    navController.navigate("main/${Uri.encode(name)}") {
-                        popUpTo("onboarding") { inclusive = true }
+                    withContext(Dispatchers.Main) {
+                        navController.navigate("main/${Uri.encode(name)}") {
+                            popUpTo("onboarding") { inclusive = true }
+                        }
                     }
                 }
             },

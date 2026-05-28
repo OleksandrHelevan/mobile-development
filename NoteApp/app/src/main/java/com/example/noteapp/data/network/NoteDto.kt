@@ -4,24 +4,31 @@ import com.example.noteapp.data.local.NoteEntity
 import com.google.gson.annotations.SerializedName
 
 data class NoteDto(
-    @SerializedName(value = "id", alternate = ["_id"])
-    val id: String?,
+    val id: String,
     val title: String,
     val content: String,
     val priority: Int,
-    val category: String?,
-    val isFavorite: Boolean?,
-    val estimatedTime: Int?,
-    val sourceUrl: String?
+    val category: String,
+    @SerializedName("isFavorite") val isFavorite: Boolean = false,
+    val estimatedTime: Int,
+    val sourceUrl: String? = null,
+    val imagePath: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null
 ) {
-    fun toEntity(): NoteEntity = NoteEntity(
-        id = id ?: System.currentTimeMillis().toString(),
-        title = title,
-        content = content,
-        priority = priority,
-        category = category ?: "Особисте",
-        isFavorite = isFavorite ?: false,
-        estimatedTime = estimatedTime ?: 0,
-        sourceUrl = sourceUrl ?: ""
-    )
+    fun toEntity(): NoteEntity {
+        return NoteEntity(
+            id = this.id,
+            title = this.title,
+            content = this.content,
+            priority = this.priority,
+            category = this.category,
+            isFavorite = this.isFavorite,
+            estimatedTime = this.estimatedTime,
+            sourceUrl = this.sourceUrl ?: "",
+            imagePath = this.imagePath,
+            latitude = this.latitude,
+            longitude = this.longitude
+        )
+    }
 }
